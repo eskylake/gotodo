@@ -21,5 +21,8 @@
         "titleBar.inactiveBackground": "#00add899",
         "titleBar.inactiveForeground": "#e7e7e799"
     },
-    "peacock.color": "#00ADD8"
+    "peacock.color": "#00ADD8",
+    "cSpell.words": [
+        "varchar"
+    ]
 }

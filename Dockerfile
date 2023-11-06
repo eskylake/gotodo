@@ -8,14 +8,15 @@ RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh 
 
 ENV CGO_ENABLED=0
 
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download && go mod verify
-RUN go mod tidy
+COPY go*.* ./
+# COPY go.sum ./
+# RUN go mod download && go mod verify
+# RUN go mod download
+RUN go mod tidy && go mod verify
 
 COPY . .
 
-CMD ["air"]
+CMD ["tail", "-f", "/dev/null"]
 
 FROM base as built
 
