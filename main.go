@@ -31,6 +31,9 @@ func initDatabase() {
 
 func setupRoutes(app *fiber.App) {
 	app.Get("/todos", todo.GetTodos)
+	app.Get("/todos/:id", todo.GetTodoById)
+	app.Post("/todos", todo.CreateTodo)
+
 	fmt.Println("Setup routes done")
 }
 
