@@ -23,6 +23,8 @@
     },
     "peacock.color": "#00ADD8",
     "cSpell.words": [
+        "GOTODO",
+        "mapstructure",
         "varchar"
     ]
 }

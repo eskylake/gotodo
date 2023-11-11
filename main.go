@@ -1,52 +1,72 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
-	"github.com/eskylake/go-todo/database"
-	todo "github.com/eskylake/go-todo/models"
+	"github.com/eskylake/go-todo/controllers"
+	"github.com/eskylake/go-todo/initializer"
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-func dd(arg ...interface{}) {
-	fmt.Printf("%v", arg)
+func dd(arg ...any) {
+	log.Fatalln(arg...)
 	panic("Die")
 }
 
-func initDatabase() {
-	var err error
-	dsn := "host=go-todo-postgres user=pg-user password=pg-password dbname=pg-db port=5432"
-	database.DBConnection, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-
+func init() {
+	config, err := initializer.LoadConfig(".")
 	if err != nil {
-		dd("Failed to open database")
+		dd("Failed to load environment variables! \n", err.Error())
 	}
 
-	fmt.Println("Database connection done")
-	database.DBConnection.AutoMigrate(&todo.Todo{})
-	fmt.Println("Migration done")
+	initializer.ConnectDB(&config)
 }
 
 func setupRoutes(app *fiber.App) {
-	app.Get("/todos", todo.GetTodos)
-	app.Get("/todos/:id", todo.GetTodoById)
-	app.Post("/todos", todo.CreateTodo)
+	app.Route("/todos", func(router fiber.Router) {
+		router.Post("/", controllers.CreateTodo)
+		router.Get("", controllers.GetTodos)
+	})
 
-	fmt.Println("Setup routes done")
-}
+	app.Route("/todos/:id", func(router fiber.Router) {
+		router.Get("", controllers.GetTodoById)
+		router.Patch("", controllers.UpdateTodo)
+		router.Delete("", controllers.DeleteTodo)
+	})
 
-func helloWorld(c *fiber.Ctx) error {
-	return c.SendString("Hello, World!")
+	app.Get("/health", func(c *fiber.Ctx) error {
+		err := initializer.Ping()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"status":  "fail",
+				"message": "Database connection error",
+				"data":    err.Error(),
+			})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status":  "success",
+			"message": "All Healthy",
+		})
+	})
 }
 
 func main() {
 	app := fiber.New()
-	initDatabase()
-	app.Get("/", helloWorld)
-	setupRoutes(app)
-	if err := app.Listen(":3000"); err != nil {
-		dd(err)
-	}
+	micro := fiber.New()
+
+	app.Mount("/api", micro)
+	app.Use(logger.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000",
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowMethods:     "GET, POST, PATCH, DELETE",
+		AllowCredentials: true,
+	}))
+
+	setupRoutes(micro)
+
+	log.Fatal(app.Listen(":3000"))
 }

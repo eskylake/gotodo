@@ -8,6 +8,8 @@ services:
       target: dev
     volumes:
       - .:/app/api
+    env_file:
+      - .env
     ports:
     - ${GOTODO_API_HTTP_EXPOSE_PORT:-4000}:${GOTODO_API_HTTP_PORT:-3000}
     command: tail -f /dev/null
@@ -16,7 +18,7 @@ services:
 
   go-todo-postgres:
     container_name: go-todo-postgres
-    image: postgres:14.5
+    image: ${GOTODO_POSTGRES_IMAGE:-postgres:14.5}
     environment:
       POSTGRES_DB: ${GOTODO_POSTGRES_DB:-pg-db}
       POSTGRES_USER: ${GOTODO_POSTGRES_USER:-pg-user}
@@ -26,6 +28,8 @@ services:
       - ./psql:/var/lib/postgresql/data
     ports:
       - 5433:${GOTODO_POSTGRES_PORT:-5432}
+    env_file:
+      - .env
     networks:
       - todo-backend-network
 
