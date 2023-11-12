@@ -1,4 +1,4 @@
-package initializer
+package config
 
 import (
 	"fmt"
@@ -12,6 +12,7 @@ type Config struct {
 	DBPassword string `mapstructure:"GOTODO_POSTGRES_PASSWORD"`
 	DBName     string `mapstructure:"GOTODO_POSTGRES_DB"`
 	DBPort     string `mapstructure:"GOTODO_POSTGRES_PORT"`
+	APIPort    string `mapstructure:"GOTODO_API_HTTP_PORT"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

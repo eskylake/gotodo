@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eskylake/go-todo/initializer"
+	"github.com/eskylake/go-todo/database"
 	todo "github.com/eskylake/go-todo/models"
 	"github.com/eskylake/go-todo/utils"
 	"github.com/gofiber/fiber/v2"
@@ -30,7 +30,7 @@ func CreateTodo(c *fiber.Ctx) error {
 		Content: payload.Content,
 	}
 
-	result := initializer.DB.Create(&newTodo)
+	result := database.DB.Create(&newTodo)
 
 	if result.Error != nil && strings.Contains(result.Error.Error(), "duplicate key value violates unique") {
 		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"status": "fail", "message": "Title already exist, please use another title"})
@@ -50,7 +50,7 @@ func GetTodos(c *fiber.Ctx) error {
 	offset := (intPage - 1) * intLimit
 
 	var todos []todo.Todo
-	results := initializer.DB.Limit(intLimit).Offset(offset).Find(&todos)
+	results := database.DB.Limit(intLimit).Offset(offset).Find(&todos)
 	if results.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": results.Error})
 	}
@@ -68,7 +68,7 @@ func UpdateTodo(c *fiber.Ctx) error {
 	}
 
 	var todo todo.Todo
-	result := initializer.DB.First(&todo, "id = ?", todoId)
+	result := database.DB.First(&todo, "id = ?", todoId)
 	if err := result.Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "No todo with that Id exists"})
@@ -86,7 +86,7 @@ func UpdateTodo(c *fiber.Ctx) error {
 
 	updates["updated_at"] = time.Now()
 
-	initializer.DB.Model(&todo).Updates(updates)
+	database.DB.Model(&todo).Updates(updates)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"todo": todo}})
 }
@@ -95,7 +95,7 @@ func GetTodoById(c *fiber.Ctx) error {
 	todoId := c.Params("id")
 
 	var todo todo.Todo
-	result := initializer.DB.First(&todo, "id = ?", todoId)
+	result := database.DB.First(&todo, "id = ?", todoId)
 	if err := result.Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "No todo with that Id exists"})
@@ -109,7 +109,7 @@ func GetTodoById(c *fiber.Ctx) error {
 func DeleteTodo(c *fiber.Ctx) error {
 	todoId := c.Params("id")
 
-	result := initializer.DB.Delete(&todo.Todo{}, "id = ?", todoId)
+	result := database.DB.Delete(&todo.Todo{}, "id = ?", todoId)
 
 	if result.RowsAffected == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "No todo with that Id exists"})

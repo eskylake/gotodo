@@ -1,13 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 
-	"github.com/eskylake/go-todo/controllers"
-	"github.com/eskylake/go-todo/initializer"
+	"github.com/eskylake/go-todo/config"
+	"github.com/eskylake/go-todo/database"
+	"github.com/eskylake/go-todo/routers"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+)
+
+var (
+	conf config.Config
+	err  error
 )
 
 func dd(arg ...any) {
@@ -16,41 +23,12 @@ func dd(arg ...any) {
 }
 
 func init() {
-	config, err := initializer.LoadConfig(".")
+	conf, err = config.LoadConfig(".")
 	if err != nil {
 		dd("Failed to load environment variables! \n", err.Error())
 	}
 
-	initializer.ConnectDB(&config)
-}
-
-func setupRoutes(app *fiber.App) {
-	app.Route("/todos", func(router fiber.Router) {
-		router.Post("/", controllers.CreateTodo)
-		router.Get("", controllers.GetTodos)
-	})
-
-	app.Route("/todos/:id", func(router fiber.Router) {
-		router.Get("", controllers.GetTodoById)
-		router.Patch("", controllers.UpdateTodo)
-		router.Delete("", controllers.DeleteTodo)
-	})
-
-	app.Get("/health", func(c *fiber.Ctx) error {
-		err := initializer.Ping()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"status":  "fail",
-				"message": "Database connection error",
-				"data":    err.Error(),
-			})
-		}
-
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"status":  "success",
-			"message": "All Healthy",
-		})
-	})
+	database.ConnectDB(&conf)
 }
 
 func main() {
@@ -59,14 +37,14 @@ func main() {
 
 	app.Mount("/api", micro)
 	app.Use(logger.New())
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000",
-		AllowHeaders:     "Origin, Content-Type, Accept",
-		AllowMethods:     "GET, POST, PATCH, DELETE",
-		AllowCredentials: true,
-	}))
+	app.Use(routers.Cors())
 
-	setupRoutes(micro)
+	routers.SetupRoutes(micro)
 
-	log.Fatal(app.Listen(":3000"))
+	port, err := strconv.Atoi(conf.APIPort)
+	if err != nil {
+		dd(err.Error())
+	}
+
+	log.Fatal(app.Listen(fmt.Sprintf(":%d", port)))
 }
