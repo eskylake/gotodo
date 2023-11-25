@@ -3,7 +3,7 @@ services:
   go-todo-api:
     container_name: go-todo-api
     build:
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       context: .
       target: dev
     volumes:
